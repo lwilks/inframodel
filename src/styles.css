@@ -14,3 +14,7 @@ body,
 body {
   background: white;
 }
+
+.crosshair {
+  cursor: crosshair;
+}
