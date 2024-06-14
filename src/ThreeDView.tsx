@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { Fragment, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 //import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import * as OBC from 'openbim-components';
+import * as OBC from '@thatopen/components';
+import * as OBCF from '@thatopen/fragments'; 
 // @ts-ignore
 import sampleLandXML from './assets/sample.xml';
 //import * as xml2js from 'xml2js';
@@ -14,17 +15,23 @@ const ThreeDView: React.FC = () => {
         const container = containerRef.current;
         if (container) {
             const components = new OBC.Components();
-            components.scene = new OBC.SimpleScene(components);
-            components.renderer = new OBC.SimpleRenderer(components, container);
-            components.camera = new OBC.SimpleCamera(components);
-            components.raycaster = new OBC.SimpleRaycaster(components);
+            const worlds = components.get(OBC.Worlds);
+            const world = worlds.create<
+                OBC.SimpleScene,
+                OBC.SimpleCamera,
+                OBC.SimpleRenderer
+            >();            
+            
+            world.scene = new OBC.SimpleScene(components);
+            world.renderer = new OBC.SimpleRenderer(components, container);
+            world.camera = new OBC.SimpleCamera(components);
 
             components.init();
 
             console.log('LWTEST!');
 
-            const scene = components.scene.get();
-            (components.camera as any).controls.setLookAt(10, 10, 10, 0, 0, 0);
+            const scene = world.scene.three;
+            world.camera.controls.setLookAt(10, 10, 10, 0, 0, 0);
 
             //const grid = new OBC.SimpleGrid(components);
             //scene.add(grid.get());
@@ -88,10 +95,12 @@ const ThreeDView: React.FC = () => {
                         facesArray.push(faceArray[0]-1, faceArray[1]-1, faceArray[2]-1);
                     });
 
+                    const fragments = components.get(OBC.FragmentsManager);
+
                     // Create a BufferGeometry and set the vertices and indices
                     const geometry = new THREE.BufferGeometry();
                     geometry.setAttribute('position', new THREE.Float32BufferAttribute(tempVertices, 3));
-                    geometry.setIndex(facesArray);
+                    geometry.setIndex(facesArray);         
 
                     // Create a material and set the color
                     //const material = new THREE.MeshStandardMaterial({ color: '#FF0000', vertexColors: true});
@@ -117,6 +126,14 @@ const ThreeDView: React.FC = () => {
 
                     // Create a mesh and add it to the scene
                     const mesh = new THREE.Mesh(geometry, material);
+
+                    //fragments.meshes.push(mesh);   
+                    //fragments.groups[0];     
+                    
+                    const frag = new OBCF.Fragment(geometry, material, 1);
+                    const fragGroup = new OBCF.FragmentsGroup();
+                    fragGroup.add()
+
                     scene.add(mesh);              
                 } catch (error) {
                     console.error('Failed to load model:', error);
@@ -130,7 +147,7 @@ const ThreeDView: React.FC = () => {
             //cube.position.set(0, 1.5, 0);
             //scene.add(cube);
 
-            (components.scene as any).setup();
+            world.scene.setup();
 
             //const label = new OBC.Simple2DMarker(components);
             //label.get().position.set(0, 4, 0);
@@ -140,8 +157,8 @@ const ThreeDView: React.FC = () => {
             //});            
 
             return () => {
-            (components.camera as any).dispose();  
-            (components.scene as any).dispose();
+            world.camera.dispose();  
+            world.scene.dispose();
             components.dispose();
             };
         }
